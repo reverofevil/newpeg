@@ -1,5 +1,17 @@
-var _ = require('lodash-node');
 var assert = require('assert');
+
+var _ = {
+	pluck: function (arr, key) {
+		return arr.map(function (item) {
+			return item[key];
+		});
+	},
+	contains: function (arr, value) {
+		return arr.some(function (item) {
+			return item == value;
+		});
+	}
+};
 
 function generator(ast, prefix) {
 	this.prefix = prefix || "b";

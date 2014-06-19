@@ -1,4 +1,4 @@
-var b = require('../prim/base.js');
+var b = require('./base.js');
 function grammar() {
     return b.flat(b.seq(b.some(b.ref(rule)), b.ref(_), b.ref(eof)), function(a, $0, $1) {
         return {
