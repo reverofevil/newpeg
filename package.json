@@ -2,7 +2,7 @@
   "name": "newpeg",
   "version": "0.1.0",
   "description": "PEG parser generator",
-  "homepage": "https://todo.github.url",
+  "homepage": "https://github.com/polkovnikov-phil/newpeg",
   "author": {
     "name": "Philip Polkovnikov",
     "email": "polkovnikov.ph@gmail.com",
@@ -11,10 +11,10 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "https://todo.github.url"
+    "url": "https://github.com/polkovnikov-phil/newpeg.git"
   },
   "bugs": {
-    "url": "https://todo.github.url"
+    "url": "https://github.com/polkovnikov-phil/newpeg/issues"
   },
   "keywords": [
     "peg",
