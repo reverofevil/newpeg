@@ -1,0 +1,24 @@
+{
+  "name": "newpeg",
+  "version": "0.1.0",
+  "description": "PEG parser generator",
+  "homepage": "https://todo.github.url",
+  "author": {
+    "name": "Philip Polkovnikov",
+    "email": "polkovnikov.ph@gmail.com",
+    "url": "http://polkovnikov.ph/"
+  },
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://todo.github.url"
+  },
+  "bugs": {
+    "url": "https://todo.github.url"
+  },
+  "keywords": [
+    "peg",
+    "parser"
+  ],
+  "license": "MIT"
+}

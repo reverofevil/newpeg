@@ -1,0 +1,50 @@
+grammar = a:rule+ _ eof { return {type: "grammar", rules: a}; }
+rule = a:ident _ "=" b:expr0 eos { return {type: "rule", name: a, expr: b}; }
+expr0 = a:expr1 b:(_ "/" a:expr1 { return a; })+ { return {type: "choice", args: (b.unshift(a), b)}; }
+      / expr1
+expr1 = a:expr2 !numer b:code_block { return {type: "apply", expr: a, code: b}; } / expr2
+code_block = _ "{" a:$code _ "}" { return a; }
+code = (scomm / mcommjs / string / code_block / [^}])*
+expr2 = a:expr3+ { return {type: "sequence", args: a}; }
+      / { return {type: "eps"}; }
+expr3 = a:ident _ ":" b:expr4 { return {type: "named", name: a, expr: b}; }
+      / _ "@" a:expr4 { return {type: "saved", expr: a}; }
+	  / _ a:[!&] b:expr4 { return {type: ({"!": "negcheck", "&": "poscheck"})[a], expr: b}; }
+      / expr4
+expr4 = _ "$" b:expr5 { return {type: "stringify", expr: b}; }
+      / expr5
+expr5 = a:expr6 _ b:[*+?] { return {type: ({"*": "kleene", "+": "some", "?": "maybe"})[b], expr: a}; }
+      / a:expr6 b:numer { return {type: "several", expr: a, quantity: b}; }
+      / expr6
+numer = _ "{" a:numer_range _ "}" { return a; }
+numer_range = a:number { return {type: "exact", num: a}; }
+            / from:number _ "," { return {type: "atleast", from: a}; }
+            / a:number _ "," b:number { return {type: "between", from: a, to: b}; }
+expr6 = string / char_class / any_char / rule_ref / check / braced
+char_class = _ "[" b:"^"? a:class_constr* "]" c:"i"? { return {type: "class", ranges: a, negated: b === "^", case_insens: c === "i"}; };
+class_constr = a:class_char "-" b:class_char { return {type: "range", from: a, to: b}; }
+             / a:class_char { return {type: "single", chr: a}; }
+class_char = escape / [^\]]
+any_char = _ "." { return {type: "any"}; }
+rule_ref = a:ident !(_ "="){ return {type: "ref", name: a}; }
+check = _ "&{" a:$code _ "}" { return {type: "check", code: a}; }
+braced = _ "(" a:expr0 _ ")" { return a; }
+number = _ a:[0-9]+ { return parseInt(a, 10); }
+string = _ a:(string_q / string_qq) b:"i"? { return {type: "strlit", text: a, case_insens: b === "i"}; } 
+string_q = "'" a:(escape / [^'\\])* "'" { return a.join(""); }
+string_qq = '"' a:(escape / [^"\\])* '"' { return a.join(""); }
+escape = "\\" a:(hex_escape / unicode_escape / c_escape / .) { return a; }
+hex_escape = "x" a:$(hex hex) { return String.fromCharCode(parseInt(a, 16)); }
+unicode_escape = "u" a:$(hex hex hex hex) { return String.fromCharCode(parseInt(a, 16)); }
+c_escape = a:[bfnrtv] { return "\b\f\n\r\t\x0B"["bfnrtv".indexOf(a)]; }
+hex = [0-9a-f]i
+mcomm = "/*" (mcomm / !"*/" .)* "*/"
+mcomm_nonl = "/*" (mcomm_nonl / !("*/" / nl) .)* "*/"
+mcommjs = "/*" (!"*/" .)* "*/"
+scomm = "//" ([^\r\n] .)* (nl / eof)
+ident = _ a:$([a-zA-Z_][a-zA-Z0-9_]*) { return a; }
+_ = (mcomm / scomm / [ \t] / nl)*
+_nonl = (mcomm_nonl / scomm / [ \t])*
+nl = "\r" / "\n\r" / "\n"
+eos = _nonl nl / _ (";" / eof)
+eof = !.
