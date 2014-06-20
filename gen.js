@@ -28,6 +28,7 @@ generator.prototype.genGrammar = function (node) {
 
 generator.prototype.genRule = function (node) {
 	assert(node.type === 'rule', "genRule takes only rules");
+	if (this.provided[node.name]) throw "Multiple provides";
 	this.provided[node.name] = true;
 	if (!this.main_rule) this.main_rule = node.name;
 	return "function " + node.name + "() { return " + this.genExpr(node.expr) + " ; }";
@@ -35,25 +36,25 @@ generator.prototype.genRule = function (node) {
 
 generator.prototype.genExpr = function (node) {
 	switch (node.type) {
-		case 'named':
-		case 'saved':     return this.genExpr(node.expr);
-		case 'choice':    return this.genChoice(node);
-		case 'apply':     return this.genApply(node);
-		case 'sequence':  return this.genSequence(node);
-		case 'eps':       return this.genEps(node);
-		case 'negcheck':  return this.genNegCheck(node);
-		case 'poscheck':  return this.genPosCheck(node);
-		case 'stringify': return this.genStringify(node);
-		case 'kleene':    return this.genKleene(node);
-		case 'some':      return this.genSome(node);
-		case 'maybe':     return this.genMaybe(node);
-		case 'several':   return this.genSeveral(node);
-		case 'class':     return this.genClass(node);
-		case 'any':       return this.genAny(node);
-		case 'ref':       return this.genRef(node);
-		case 'check':     return this.genCheck(node);
-		case 'strlit':    return this.genStrlit(node);
-		default:          assert(false, "genExpr got " + JSON.stringify(node));
+	case 'named':
+	case 'saved':     return this.genExpr(node.expr);
+	case 'choice':    return this.genChoice(node);
+	case 'apply':     return this.genApply(node);
+	case 'sequence':  return this.genSequence(node);
+	case 'eps':       return this.genEps(node);
+	case 'negcheck':  return this.genNegCheck(node);
+	case 'poscheck':  return this.genPosCheck(node);
+	case 'stringify': return this.genStringify(node);
+	case 'kleene':    return this.genKleene(node);
+	case 'some':      return this.genSome(node);
+	case 'maybe':     return this.genMaybe(node);
+	case 'several':   return this.genSeveral(node);
+	case 'class':     return this.genClass(node);
+	case 'any':       return this.genAny(node);
+	case 'ref':       return this.genRef(node);
+	case 'check':     return this.genCheck(node);
+	case 'strlit':    return this.genStrlit(node);
+	default:          assert(false, "genExpr got " + JSON.stringify(node));
 	}
 };
 
@@ -230,8 +231,8 @@ generator.prototype.genStrlit = function (node) {
 };
 
 generator.prototype.checkRequires = function () {
-	for (var i in this.requires)
-		if (this.requires.hasOwnProperty(i) && !this.provides[i])
+	for (var i in this.required)
+		if (this.requires.hasOwnProperty(i) && !this.provided[i])
 			assert(false, i + " required but never provided");
 };
 

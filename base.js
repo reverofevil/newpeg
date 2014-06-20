@@ -74,9 +74,11 @@ b.maybe = function (arg) {
 };
 
 // mutual recursion of rules
-b.ref = function (rule) {
+b.ref = function (rule /*, args */) {
+	var args = Array.prototype.slice.call(arguments);
+	args.shift();
 	return function (from) {
-		return rule().bind(this)(from);
+		return rule.apply(null, args).call(this, from);
 	};
 };
 
