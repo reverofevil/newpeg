@@ -1,50 +1,50 @@
-grammar = a:rule+ _ eof { return {type: "grammar", rules: a}; }
-rule = a:ident _ "=" b:expr0 eos { return {type: "rule", name: a, expr: b}; }
-expr0 = a:expr1 b:(_ "/" a:expr1 { return a; })+ { return {type: "choice", args: (b.unshift(a), b)}; }
-      / expr1
-expr1 = a:expr2 !numer b:code_block { return {type: "apply", expr: a, code: b}; } / expr2
-code_block = _ "{" a:$code _ "}" { return a; }
-code = (scomm / mcommjs / string / code_block / [^}])*
-expr2 = a:expr3+ { return {type: "sequence", args: a}; }
-      / { return {type: "eps"}; }
-expr3 = a:ident _ ":" b:expr4 { return {type: "named", name: a, expr: b}; }
-      / _ "@" a:expr4 { return {type: "saved", expr: a}; }
-	  / _ a:[!&] b:expr4 { return {type: ({"!": "negcheck", "&": "poscheck"})[a], expr: b}; }
-      / expr4
-expr4 = _ "$" b:expr5 { return {type: "stringify", expr: b}; }
-      / expr5
-expr5 = a:expr6 _ b:[*+?] { return {type: ({"*": "kleene", "+": "some", "?": "maybe"})[b], expr: a}; }
-      / a:expr6 b:numer { return {type: "several", expr: a, quantity: b}; }
-      / expr6
-numer = _ "{" a:numer_range _ "}" { return a; }
-numer_range = a:number { return {type: "exact", num: a}; }
-            / from:number _ "," { return {type: "atleast", from: a}; }
-            / a:number _ "," b:number { return {type: "between", from: a, to: b}; }
-expr6 = string / char_class / any_char / rule_ref / check / braced
-char_class = _ "[" b:"^"? a:class_constr* "]" c:"i"? { return {type: "class", ranges: a, negated: b === "^", case_insens: c === "i"}; };
-class_constr = a:class_char "-" b:class_char { return {type: "range", from: a, to: b}; }
-             / a:class_char { return {type: "single", chr: a}; }
-class_char = escape / [^\]]
-any_char = _ "." { return {type: "any"}; }
-rule_ref = a:ident !(_ "="){ return {type: "ref", name: a}; }
-check = _ "&{" a:$code _ "}" { return {type: "check", code: a}; }
-braced = _ "(" a:expr0 _ ")" { return a; }
-number = _ a:[0-9]+ { return parseInt(a, 10); }
-string = _ a:(string_q / string_qq) b:"i"? { return {type: "strlit", text: a, case_insens: b === "i"}; } 
-string_q = "'" a:(escape / [^'\\])* "'" { return a.join(""); }
-string_qq = '"' a:(escape / [^"\\])* '"' { return a.join(""); }
-escape = "\\" a:(hex_escape / unicode_escape / c_escape / .) { return a; }
-hex_escape = "x" a:$(hex hex) { return String.fromCharCode(parseInt(a, 16)); }
-unicode_escape = "u" a:$(hex hex hex hex) { return String.fromCharCode(parseInt(a, 16)); }
-c_escape = a:[bfnrtv] { return "\b\f\n\r\t\x0B"["bfnrtv".indexOf(a)]; }
-hex = [0-9a-f]i
-mcomm = "/*" (mcomm / !"*/" .)* "*/"
-mcomm_nonl = "/*" (mcomm_nonl / !("*/" / nl) .)* "*/"
-mcommjs = "/*" (!"*/" .)* "*/"
-scomm = "//" ([^\r\n] .)* (nl / eof)
-ident = _ a:$([a-zA-Z_][a-zA-Z0-9_]*) { return a; }
-_ = (mcomm / scomm / [ \t] / nl)*
-_nonl = (mcomm_nonl / scomm / [ \t])*
-nl = "\r" / "\n\r" / "\n"
-eos = _nonl nl / _ (";" / eof)
-eof = !.
+grammar      = type:$"grammar" rules:rule+ _ eof
+rule         = type:$"rule" name:ident arglist:argdeflist? _ "=" expr:expr0 eos
+expr0        = type:$"choice" args:inter1(expr1, _ "/") / expr1
+expr1        = type:$"apply" expr:expr2 !numer code:code_block / expr2
+code_block   = _ "{" @$code _ "}"
+code         = (scomm / mcommjs / string / code_block / [^}])*
+expr2        = type:$"sequence" args:expr3+ / type:$"eps"
+expr3        = type:$"named" name:ident _ ":" expr:expr4
+             / _ type:expr3op expr:expr4 / expr4
+expr3op      = @$"saved" "@" / @$"negcheck" "!" / @$"poscheck" "&"
+expr4        = type:$"stringify" _ "$" expr:expr5 / expr5
+expr5        = expr:expr6 _ type:expr5op
+             / expr:expr6 qty:numer { return qty.expr = expr, qty; } / expr6
+expr5op      = @$"kleene" "*" / @$"some" "+" / @$"maybe" "?"
+numer        = _ "{" @numer_range _ "}"
+numer_range  = type:$"exact" num:number
+             / type:$"atleast" from:number _ ","
+             / type:$"between" from:number _ "," to:number
+expr6        = string / char_class / any_char / rule_ref / braced
+char_class   = type:$"class" _ "[" negated:("^" { return true; })? 
+               ranges:class_constr* "]" case_insens:ichar
+class_constr = type:$"range" from:class_char "-" to:class_char
+             / type:$"single" chr:class_char
+class_char   = escape / [^\]]
+any_char     = type:$"any" _ "."
+rule_ref     = type:$"ref" name:ident arglist:arglist? !( _ "=")
+braced       = _ "(" @expr0 _ ")"
+argdeflist   = "(" @inter(ident, _ ",") _ ")"
+arglist      = "(" @inter(expr0, _ ",") _ ")"
+number       = _ n:[0-9]+ { return parseInt(n, 10); }
+string       = type:$"strlit" _ text:(string_("'") / string_('"')) case_insens:ichar
+string_(sep) = sep a:(escape / !sep @[^\\])* sep { return a.join(""); }
+escape       = "\\" @(hex_escape / ucode_escape / c_escape / .)
+hex_escape   = "x" a:$(hex hex) { return String.fromCharCode(parseInt(a, 16)); }
+ucode_escape = "u" a:$(hex hex hex hex) { return String.fromCharCode(parseInt(a, 16)); }
+c_escape     = a:[bfnrtv] { return "\b\f\n\r\t\x0B"["bfnrtv".indexOf(a)]; }
+inter(a, b)  = a:a b:(b @a)* { return b.unshift(a), b; }
+inter1(a, b) = a:a b:(b @a)+ { return b.unshift(a), b; }
+hex          = [0-9a-f]i
+ichar        = ("i" { return true; })?
+mcomm        = "/*" (mcomm / !"*/" .)* "*/"
+mcomm_nonl   = "/*" (mcomm_nonl / !("*/" / nl) .)* "*/"
+mcommjs      = "/*" (!"*/" .)* "*/"
+scomm        = "//" ([^\r\n] .)* (nl / eof)
+ident        = _ @$([a-zA-Z_][a-zA-Z0-9_]*)
+_            = (mcomm / scomm / [ \t] / nl)*
+_nonl        = (mcomm_nonl / scomm / [ \t])*
+nl           = "\r" / "\n\r" / "\n"
+eos          = _nonl nl / _ (";" / eof)
+eof          = !.

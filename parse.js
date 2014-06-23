@@ -1,285 +1,359 @@
-var b = require('./base.js');
+var $ = require("./base.js");
 function grammar() {
-    return b.flat(b.seq(b.some(b.ref(rule)), b.ref(_), b.ref(eof)), function(a, $0, $1) {
+    return $.apply($.seq($.apply($.eps, function() {
+        return "grammar";
+    }), $.some($.ref(rule)), $.ref(_), $.ref(eof)), function($data) {
         return {
-            type: "grammar",
-            rules: a
+            type: $data[0],
+            rules: $data[1]
         };
     });
 }
 function rule() {
-    return b.flat(b.seq(b.ref(ident), b.ref(_), b.lit("="), b.ref(expr0), b.ref(eos)), function(a, $0, $1, b, $2) {
+    return $.apply($.seq($.apply($.eps, function() {
+        return "rule";
+    }), $.ref(ident), $.maybe($.ref(argdeflist)), $.ref(_), $.lit("="), $.ref(expr0), $.ref(eos)), function($data) {
         return {
-            type: "rule",
-            name: a,
-            expr: b
+            type: $data[0],
+            name: $data[1],
+            arglist: $data[2],
+            expr: $data[5]
         };
     });
 }
 function expr0() {
-    return b.par(b.flat(b.seq(b.ref(expr1), b.some(b.flat(b.seq(b.ref(_), b.lit("/"), b.ref(expr1)), function($0, $1, a) {
-        return a;
-    }))), function(a, b) {
+    return $.par($.apply($.seq($.apply($.eps, function() {
+        return "choice";
+    }), $.ref(inter1, $.ref(expr1), $.seq($.ref(_), $.lit("/")))), function($data) {
         return {
-            type: "choice",
-            args: ( b.unshift(a), b)
+            type: $data[0],
+            args: $data[1]
         };
-    }), b.ref(expr1));
+    }), $.ref(expr1));
 }
 function expr1() {
-    return b.par(b.flat(b.seq(b.ref(expr2), b.negcheck(b.ref(numer)), b.ref(code_block)), function(a, $0, b) {
+    return $.par($.apply($.seq($.apply($.eps, function() {
+        return "apply";
+    }), $.ref(expr2), $.negcheck($.ref(numer)), $.ref(code_block)), function($data) {
         return {
-            type: "apply",
-            expr: a,
-            code: b
+            type: $data[0],
+            expr: $data[1],
+            code: $data[3]
         };
-    }), b.ref(expr2));
+    }), $.ref(expr2));
 }
 function code_block() {
-    return b.flat(b.seq(b.ref(_), b.lit("{"), b.str(b.ref(code)), b.ref(_), b.lit("}")), function($0, $1, a, $2, $3) {
-        return a;
+    return $.apply($.seq($.ref(_), $.lit("{"), $.str($.ref(code)), $.ref(_), $.lit("}")), function($data) {
+        return $data[2];
     });
 }
 function code() {
-    return b.any(b.par(b.ref(scomm), b.ref(mcommjs), b.ref(string), b.ref(code_block), b.apply(b.seq(b.negcheck(b.par(b.lit("}"))), b.chr), function($data) {
+    return $.any($.par($.ref(scomm), $.ref(mcommjs), $.ref(string), $.ref(code_block), $.apply($.seq($.negcheck($.par($.lit("}"))), $.chr), function($data) {
         return $data[1];
     })));
 }
 function expr2() {
-    return b.par(b.apply(b.some(b.ref(expr3)), function(a) {
+    return $.par($.apply($.seq($.apply($.eps, function() {
+        return "sequence";
+    }), $.some($.ref(expr3))), function($data) {
         return {
-            type: "sequence",
-            args: a
-        };;
-    }), b.apply(b.eps, function(data) {
+            type: $data[0],
+            args: $data[1]
+        };
+    }), $.apply($.seq($.apply($.eps, function() {
+        return "eps";
+    })), function($data) {
         return {
-            type: "eps"
+            type: $data[0]
         };
     }));
 }
 function expr3() {
-    return b.par(b.flat(b.seq(b.ref(ident), b.ref(_), b.lit(":"), b.ref(expr4)), function(a, $0, $1, b) {
+    return $.par($.apply($.seq($.apply($.eps, function() {
+        return "named";
+    }), $.ref(ident), $.ref(_), $.lit(":"), $.ref(expr4)), function($data) {
         return {
-            type: "named",
-            name: a,
-            expr: b
+            type: $data[0],
+            name: $data[1],
+            expr: $data[4]
         };
-    }), b.flat(b.seq(b.ref(_), b.lit("@"), b.ref(expr4)), function($0, $1, a) {
+    }), $.apply($.seq($.ref(_), $.ref(expr3op), $.ref(expr4)), function($data) {
         return {
-            type: "saved",
-            expr: a
+            type: $data[1],
+            expr: $data[2]
         };
-    }), b.flat(b.seq(b.ref(_), b.par(b.lit("!"), b.lit("&")), b.ref(expr4)), function($0, a, b) {
-        return {
-            type: ({
-                "!": "negcheck",
-                "&": "poscheck"
-            })[a],
-            expr: b
-        };
-    }), b.ref(expr4));
+    }), $.ref(expr4));
+}
+function expr3op() {
+    return $.par($.apply($.seq($.apply($.eps, function() {
+        return "saved";
+    }), $.lit("@")), function($data) {
+        return $data[0];
+    }), $.apply($.seq($.apply($.eps, function() {
+        return "negcheck";
+    }), $.lit("!")), function($data) {
+        return $data[0];
+    }), $.apply($.seq($.apply($.eps, function() {
+        return "poscheck";
+    }), $.lit("&")), function($data) {
+        return $data[0];
+    }));
 }
 function expr4() {
-    return b.par(b.flat(b.seq(b.ref(_), b.lit("$"), b.ref(expr5)), function($0, $1, b) {
+    return $.par($.apply($.seq($.apply($.eps, function() {
+        return "stringify";
+    }), $.ref(_), $.lit("$"), $.ref(expr5)), function($data) {
         return {
-            type: "stringify",
-            expr: b
+            type: $data[0],
+            expr: $data[3]
         };
-    }), b.ref(expr5));
+    }), $.ref(expr5));
 }
 function expr5() {
-    return b.par(b.flat(b.seq(b.ref(expr6), b.ref(_), b.par(b.lit("*"), b.lit("+"), b.lit("?"))), function(a, $0, b) {
+    return $.par($.apply($.seq($.ref(expr6), $.ref(_), $.ref(expr5op)), function($data) {
         return {
-            type: ({
-                "*": "kleene",
-                "+": "some",
-                "?": "maybe"
-            })[b],
-            expr: a
+            expr: $data[0],
+            type: $data[2]
         };
-    }), b.flat(b.seq(b.ref(expr6), b.ref(numer)), function(a, b) {
-        return {
-            type: "several",
-            expr: a,
-            quantity: b
-        };
-    }), b.ref(expr6));
+    }), $.apply($.seq($.ref(expr6), $.ref(numer)), function($data) {
+        return (function(expr, qty) {
+            return qty.expr = expr, qty;
+        }).apply(null, [$data[0], $data[1]]);
+    }), $.ref(expr6));
+}
+function expr5op() {
+    return $.par($.apply($.seq($.apply($.eps, function() {
+        return "kleene";
+    }), $.lit("*")), function($data) {
+        return $data[0];
+    }), $.apply($.seq($.apply($.eps, function() {
+        return "some";
+    }), $.lit("+")), function($data) {
+        return $data[0];
+    }), $.apply($.seq($.apply($.eps, function() {
+        return "maybe";
+    }), $.lit("?")), function($data) {
+        return $data[0];
+    }));
 }
 function numer() {
-    return b.flat(b.seq(b.ref(_), b.lit("{"), b.ref(numer_range), b.ref(_), b.lit("}")), function($0, $1, a, $2, $3) {
-        return a;
+    return $.apply($.seq($.ref(_), $.lit("{"), $.ref(numer_range), $.ref(_), $.lit("}")), function($data) {
+        return $data[2];
     });
 }
 function numer_range() {
-    return b.par(b.apply(b.ref(number), function(a) {
+    return $.par($.apply($.seq($.apply($.eps, function() {
+        return "exact";
+    }), $.ref(number)), function($data) {
         return {
-            type: "exact",
-            num: a
-        };;
-    }), b.flat(b.seq(b.ref(number), b.ref(_), b.lit(",")), function(from, $0, $1) {
-        return {
-            type: "atleast",
-            from: a
+            type: $data[0],
+            num: $data[1]
         };
-    }), b.flat(b.seq(b.ref(number), b.ref(_), b.lit(","), b.ref(number)), function(a, $0, $1, b) {
+    }), $.apply($.seq($.apply($.eps, function() {
+        return "atleast";
+    }), $.ref(number), $.ref(_), $.lit(",")), function($data) {
         return {
-            type: "between",
-            from: a,
-            to: b
+            type: $data[0],
+            from: $data[1]
+        };
+    }), $.apply($.seq($.apply($.eps, function() {
+        return "between";
+    }), $.ref(number), $.ref(_), $.lit(","), $.ref(number)), function($data) {
+        return {
+            type: $data[0],
+            from: $data[1],
+            to: $data[4]
         };
     }));
 }
 function expr6() {
-    return b.par(b.ref(string), b.ref(char_class), b.ref(any_char), b.ref(rule_ref), b.ref(check), b.ref(braced));
+    return $.par($.ref(string), $.ref(char_class), $.ref(any_char), $.ref(rule_ref), $.ref(braced));
 }
 function char_class() {
-    return b.flat(b.seq(b.ref(_), b.lit("["), b.maybe(b.lit("^")), b.any(b.ref(class_constr)), b.lit("]"), b.maybe(b.lit("i"))), function($0, $1, b, a, $2, c) {
+    return $.apply($.seq($.apply($.eps, function() {
+        return "class";
+    }), $.ref(_), $.lit("["), $.maybe($.apply($.lit("^"), function() {
+        return true;
+    })), $.any($.ref(class_constr)), $.lit("]"), $.ref(ichar)), function($data) {
         return {
-            type: "class",
-            ranges: a,
-            negated: b === "^",
-            case_insens: c === "i"
+            type: $data[0],
+            negated: $data[3],
+            ranges: $data[4],
+            case_insens: $data[6]
         };
     });
 }
 function class_constr() {
-    return b.par(b.flat(b.seq(b.ref(class_char), b.lit("-"), b.ref(class_char)), function(a, $0, b) {
+    return $.par($.apply($.seq($.apply($.eps, function() {
+        return "range";
+    }), $.ref(class_char), $.lit("-"), $.ref(class_char)), function($data) {
         return {
-            type: "range",
-            from: a,
-            to: b
+            type: $data[0],
+            from: $data[1],
+            to: $data[3]
         };
-    }), b.apply(b.ref(class_char), function(a) {
+    }), $.apply($.seq($.apply($.eps, function() {
+        return "single";
+    }), $.ref(class_char)), function($data) {
         return {
-            type: "single",
-            chr: a
-        };;
+            type: $data[0],
+            chr: $data[1]
+        };
     }));
 }
 function class_char() {
-    return b.par(b.ref(escape), b.apply(b.seq(b.negcheck(b.par(b.lit("]"))), b.chr), function($data) {
+    return $.par($.ref(escape), $.apply($.seq($.negcheck($.par($.lit("]"))), $.chr), function($data) {
         return $data[1];
     }));
 }
 function any_char() {
-    return b.apply(b.seq(b.ref(_), b.lit(".")), function($data) {
-        return (function(data) {
-            return {
-                type: "any"
-            };
-        })($data[0], $data[1]);
-    });
-}
-function rule_ref() {
-    return b.flat(b.seq(b.ref(ident), b.negcheck(b.seq(b.ref(_), b.lit("=")))), function(a, $0) {
+    return $.apply($.seq($.apply($.eps, function() {
+        return "any";
+    }), $.ref(_), $.lit(".")), function($data) {
         return {
-            type: "ref",
-            name: a
+            type: $data[0]
         };
     });
 }
-function check() {
-    return b.flat(b.seq(b.ref(_), b.lit("&{"), b.str(b.ref(code)), b.ref(_), b.lit("}")), function($0, $1, a, $2, $3) {
+function rule_ref() {
+    return $.apply($.seq($.apply($.eps, function() {
+        return "ref";
+    }), $.ref(ident), $.maybe($.ref(arglist)), $.negcheck($.seq($.ref(_), $.lit("=")))), function($data) {
         return {
-            type: "check",
-            code: a
+            type: $data[0],
+            name: $data[1],
+            arglist: $data[2]
         };
     });
 }
 function braced() {
-    return b.flat(b.seq(b.ref(_), b.lit("("), b.ref(expr0), b.ref(_), b.lit(")")), function($0, $1, a, $2, $3) {
-        return a;
+    return $.apply($.seq($.ref(_), $.lit("("), $.ref(expr0), $.ref(_), $.lit(")")), function($data) {
+        return $data[2];
+    });
+}
+function argdeflist() {
+    return $.apply($.seq($.lit("("), $.ref(inter, $.ref(ident), $.seq($.ref(_), $.lit(","))), $.ref(_), $.lit(")")), function($data) {
+        return $data[1];
+    });
+}
+function arglist() {
+    return $.apply($.seq($.lit("("), $.ref(inter, $.ref(expr0), $.seq($.ref(_), $.lit(","))), $.ref(_), $.lit(")")), function($data) {
+        return $data[1];
     });
 }
 function number() {
-    return b.flat(b.seq(b.ref(_), b.some(b.par(b.range("0", "9")))), function($0, a) {
-        return parseInt(a, 10);
+    return $.apply($.seq($.ref(_), $.some($.par($.range("0", "9")))), function($data) {
+        return (function(n) {
+            return parseInt(n, 10);
+        }).apply(null, [$data[1]]);
     });
 }
 function string() {
-    return b.flat(b.seq(b.ref(_), b.par(b.ref(string_q), b.ref(string_qq)), b.maybe(b.lit("i"))), function($0, a, b) {
+    return $.apply($.seq($.apply($.eps, function() {
+        return "strlit";
+    }), $.ref(_), $.par($.ref(string_, $.lit("'")), $.ref(string_, $.lit("\""))), $.ref(ichar)), function($data) {
         return {
-            type: "strlit",
-            text: a,
-            case_insens: b === "i"
+            type: $data[0],
+            text: $data[2],
+            case_insens: $data[3]
         };
     });
 }
-function string_q() {
-    return b.flat(b.seq(b.lit("'"), b.any(b.par(b.ref(escape), b.apply(b.seq(b.negcheck(b.par(b.lit("'"), b.lit("\\"))), b.chr), function($data) {
+function string_(sep) {
+    return $.apply($.seq(sep, $.any($.par($.ref(escape), $.apply($.seq($.negcheck(sep), $.apply($.seq($.negcheck($.par($.lit("\\"))), $.chr), function($data) {
         return $data[1];
-    }))), b.lit("'")), function($0, a, $1) {
-        return a.join("");
-    });
-}
-function string_qq() {
-    return b.flat(b.seq(b.lit("\""), b.any(b.par(b.ref(escape), b.apply(b.seq(b.negcheck(b.par(b.lit("\""), b.lit("\\"))), b.chr), function($data) {
+    })), function($data) {
         return $data[1];
-    }))), b.lit("\"")), function($0, a, $1) {
-        return a.join("");
+    }))), sep), function($data) {
+        return (function(a) {
+            return a.join("");
+        }).apply(null, [$data[1]]);
     });
 }
 function escape() {
-    return b.flat(b.seq(b.lit("\\"), b.par(b.ref(hex_escape), b.ref(unicode_escape), b.ref(c_escape), b.chr)), function($0, a) {
-        return a;
+    return $.apply($.seq($.lit("\\"), $.par($.ref(hex_escape), $.ref(ucode_escape), $.ref(c_escape), $.chr)), function($data) {
+        return $data[1];
     });
 }
 function hex_escape() {
-    return b.flat(b.seq(b.lit("x"), b.str(b.seq(b.ref(hex), b.ref(hex)))), function($0, a) {
-        return String.fromCharCode(parseInt(a, 16));
+    return $.apply($.seq($.lit("x"), $.str($.seq($.ref(hex), $.ref(hex)))), function($data) {
+        return (function(a) {
+            return String.fromCharCode(parseInt(a, 16));
+        }).apply(null, [$data[1]]);
     });
 }
-function unicode_escape() {
-    return b.flat(b.seq(b.lit("u"), b.str(b.seq(b.ref(hex), b.ref(hex), b.ref(hex), b.ref(hex)))), function($0, a) {
-        return String.fromCharCode(parseInt(a, 16));
+function ucode_escape() {
+    return $.apply($.seq($.lit("u"), $.str($.seq($.ref(hex), $.ref(hex), $.ref(hex), $.ref(hex)))), function($data) {
+        return (function(a) {
+            return String.fromCharCode(parseInt(a, 16));
+        }).apply(null, [$data[1]]);
     });
 }
 function c_escape() {
-    return b.apply(b.par(b.lit("b"), b.lit("f"), b.lit("n"), b.lit("r"), b.lit("t"), b.lit("v")), function(a) {
-        return "\b\f\n\r\t\x0B"["bfnrtv".indexOf(a)];;
+    return $.apply($.seq($.par($.lit("b"), $.lit("f"), $.lit("n"), $.lit("r"), $.lit("t"), $.lit("v"))), function($data) {
+        return (function(a) {
+            return "\b\f\n\r\t\x0B"["bfnrtv".indexOf(a)];
+        }).apply(null, [$data[0]]);
+    });
+}
+function inter(a, b) {
+    return $.apply($.seq(a, $.any($.apply($.seq(b, a), function($data) {
+        return $data[1];
+    }))), function($data) {
+        return (function(a, b) {
+            return b.unshift(a), b;
+        }).apply(null, [$data[0], $data[1]]);
+    });
+}
+function inter1(a, b) {
+    return $.apply($.seq(a, $.some($.apply($.seq(b, a), function($data) {
+        return $data[1];
+    }))), function($data) {
+        return (function(a, b) {
+            return b.unshift(a), b;
+        }).apply(null, [$data[0], $data[1]]);
     });
 }
 function hex() {
-    return b.par(b.range("0", "9"), b.range("a", "f"), b.range("A", "F"));
+    return $.par($.par($.range("0", "9"), $.range("0", "9")), $.par($.range("A", "F"), $.range("a", "f")));
+}
+function ichar() {
+    return $.maybe($.apply($.lit("i"), function() {
+        return true;
+    }));
 }
 function mcomm() {
-    return b.seq(b.lit("/*"), b.any(b.par(b.ref(mcomm), b.apply(b.seq(b.negcheck(b.lit("*/")), b.chr), function($data) {
-        return $data[1];
-    }))), b.lit("*/"));
+    return $.seq($.lit("/*"), $.any($.par($.ref(mcomm), $.seq($.negcheck($.lit("*/")), $.chr))), $.lit("*/"));
 }
 function mcomm_nonl() {
-    return b.seq(b.lit("/*"), b.any(b.par(b.ref(mcomm_nonl), b.apply(b.seq(b.negcheck(b.par(b.lit("*/"), b.ref(nl))), b.chr), function($data) {
-        return $data[1];
-    }))), b.lit("*/"));
+    return $.seq($.lit("/*"), $.any($.par($.ref(mcomm_nonl), $.seq($.negcheck($.par($.lit("*/"), $.ref(nl))), $.chr))), $.lit("*/"));
 }
 function mcommjs() {
-    return b.seq(b.lit("/*"), b.any(b.apply(b.seq(b.negcheck(b.lit("*/")), b.chr), function($data) {
-        return $data[1];
-    })), b.lit("*/"));
+    return $.seq($.lit("/*"), $.any($.seq($.negcheck($.lit("*/")), $.chr)), $.lit("*/"));
 }
 function scomm() {
-    return b.seq(b.lit("//"), b.any(b.seq(b.apply(b.seq(b.negcheck(b.par(b.lit("\r"), b.lit("\n"))), b.chr), function($data) {
+    return $.seq($.lit("//"), $.any($.seq($.apply($.seq($.negcheck($.par($.lit("\r"), $.lit("\n"))), $.chr), function($data) {
         return $data[1];
-    }), b.chr)), b.par(b.ref(nl), b.ref(eof)));
+    }), $.chr)), $.par($.ref(nl), $.ref(eof)));
 }
 function ident() {
-    return b.flat(b.seq(b.ref(_), b.str(b.seq(b.par(b.range("a", "z"), b.range("A", "Z"), b.lit("_")), b.any(b.par(b.range("a", "z"), b.range("A", "Z"), b.range("0", "9"), b.lit("_")))))), function($0, a) {
-        return a;
+    return $.apply($.seq($.ref(_), $.str($.seq($.par($.range("a", "z"), $.range("A", "Z"), $.lit("_")), $.any($.par($.range("a", "z"), $.range("A", "Z"), $.range("0", "9"), $.lit("_")))))), function($data) {
+        return $data[1];
     });
 }
 function _() {
-    return b.any(b.par(b.ref(mcomm), b.ref(scomm), b.par(b.lit(" "), b.lit("\t")), b.ref(nl)));
+    return $.any($.par($.ref(mcomm), $.ref(scomm), $.par($.lit(" "), $.lit("\t")), $.ref(nl)));
 }
 function _nonl() {
-    return b.any(b.par(b.ref(mcomm_nonl), b.ref(scomm), b.par(b.lit(" "), b.lit("\t"))));
+    return $.any($.par($.ref(mcomm_nonl), $.ref(scomm), $.par($.lit(" "), $.lit("\t"))));
 }
 function nl() {
-    return b.par(b.lit("\r"), b.lit("\n\r"), b.lit("\n"));
+    return $.par($.lit("\r"), $.lit("\n\r"), $.lit("\n"));
 }
 function eos() {
-    return b.par(b.seq(b.ref(_nonl), b.ref(nl)), b.seq(b.ref(_), b.par(b.lit(";"), b.ref(eof))));
+    return $.par($.seq($.ref(_nonl), $.ref(nl)), $.seq($.ref(_), $.par($.lit(";"), $.ref(eof))));
 }
 function eof() {
-    return b.negcheck(b.chr);
+    return $.negcheck($.chr);
 }
 module.exports = grammar;

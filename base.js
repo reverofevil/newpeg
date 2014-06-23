@@ -19,12 +19,12 @@ b.liti = function (str) {
 b.seq = function (/* args */) {
 	var args = Array.prototype.slice.call(arguments);
 	return function (from) {
-		var self = this, ret = [];
+		var curr = from, self = this, ret = [];
 		return args.every(function (arg) {
-			var res = arg.bind(self)(from);
-			if (res) ret.push(res.val), from = res.next;
+			var res = arg.bind(self)(curr);
+			if (res) { ret.push(res.val); curr = res.next; }
 			return res;
-		}) && {val: ret, next: from};
+		}) && {val: ret, next: curr};
 	};
 };
 
@@ -115,21 +115,6 @@ b.negcheck = function (parser) {
 	};
 };
 
-// run arbitrary check
-b.check = function (p, f) {
-	return function (from) {
-		var res = p.bind(this)(from);
-		return res && f(res.val) && res;
-	};
-};
-
-// same as `check`, but array becomes a list of arguments
-b.checkflat = function (p, f) {
-	return b.check(p, function (xs) {
-		return f.apply(null, xs);
-	});
-};
-
 // get result as parsed string
 b.str = function (p) {
 	return function (from) {
@@ -138,8 +123,8 @@ b.str = function (p) {
 	};
 };
 
-// check if character fits criteria
-b.fits = function (f) {
+// check if character satisfies criteria
+b.satisfy = function (f) {
 	return function (from) {
 		return from < this.source.length && f(this.source[from]) ? {val: this.source[from], next: from + 1} : null;
 	};
@@ -151,7 +136,7 @@ function asc(c) {
 
 // check for character range
 b.range = function (a, d) {
-	return b.fits(function (c) {
+	return b.satisfy(function (c) {
 		return asc(a) <= asc(c) && asc(c) <= asc(d);
 	});
 };
@@ -159,18 +144,6 @@ b.range = function (a, d) {
 // end of input
 b.eof = function (from) {
 	return from < this.source.length ? null : {val: null, next: from};
-};
-
-// check if first expression's match matches the second expression
-b.but = function (p1, p2) {
-	return function (from) {
-		var ret = p1.bind(this)(from);
-		if (!ret) return null;
-		return b.parse(
-			b.seq(p2, b.eof),
-			this.source.substr(from, ret.next - from)
-		) ? ret : null;
-	};
 };
 
 // parse given string with given parser
