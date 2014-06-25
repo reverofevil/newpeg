@@ -307,7 +307,7 @@ function gen_code(info, base_path) {
 			return gen_call("eps");
 		},
 		"exact"     : function (ast, visit) {
-			return gen_call("exact", [visit(ast.expr), ast.val]);
+			return gen_call("exact", [visit(ast.expr), ast.num]);
 		},
 		"atleast"   : function (ast, visit) {
 			return gen_call("atleast", [visit(ast.expr), ast.from]);

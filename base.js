@@ -146,6 +146,47 @@ b.eof = function (from) {
 	return from < this.source.length ? null : {val: null, next: from};
 };
 
+// {n}
+b.exact = function (arg, n) {
+	return function (from) {
+		var f = arg.bind(this), ret = [];
+		for (var i = 0; i < n; ++i) {
+			var res = f(from);
+			if (!res) return null;
+			ret.push(res.val);
+			from = res.next;
+		}
+		return {val: ret, next: from};
+	};
+};
+
+// {n,}
+b.atleast = function (arg, n) {
+	return function (from) {
+		var f = arg.bind(this), ret = [];
+		for (var i = 0;; ++i) {
+			var res = f(from);
+			if (!res) return i < n ? null : {val: ret, next: from};
+			ret.push(res.val);
+			from = res.next;
+		}
+	};
+};
+
+// (n, m)
+b.between = function (arg, n, m) {
+	return function (from) {
+		var f = arg.bind(this), ret = [];
+		for (var i = 0; i < m; ++i) {
+			var res = f(from);
+			if (!res) return i < n ? null : {val: ret, next: from};
+			ret.push(res.val);
+			from = res.next;
+		}
+		return {val: ret, next: from};
+	};
+};
+
 // parse given string with given parser
 b.parse = function (parser, source) {
 	var state = {source: source};

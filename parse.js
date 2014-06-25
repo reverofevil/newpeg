@@ -1,4 +1,4 @@
-var $ = require("./base.js");
+var $ = require("../base.js");
 function grammar() {
     return $.apply($.seq($.apply($.eps, function() {
         return "grammar";
@@ -276,14 +276,14 @@ function escape() {
     });
 }
 function hex_escape() {
-    return $.apply($.seq($.lit("x"), $.str($.seq($.ref(hex), $.ref(hex)))), function($data) {
+    return $.apply($.seq($.lit("x"), $.str($.exact($.ref(hex), 2))), function($data) {
         return (function(a) {
             return String.fromCharCode(parseInt(a, 16));
         }).apply(null, [$data[1]]);
     });
 }
 function ucode_escape() {
-    return $.apply($.seq($.lit("u"), $.str($.seq($.ref(hex), $.ref(hex), $.ref(hex), $.ref(hex)))), function($data) {
+    return $.apply($.seq($.lit("u"), $.str($.exact($.ref(hex), 4))), function($data) {
         return (function(a) {
             return String.fromCharCode(parseInt(a, 16));
         }).apply(null, [$data[1]]);
