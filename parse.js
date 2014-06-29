@@ -1,4 +1,4 @@
-var $ = require("../base.js");
+var $ = require("./base.js");
 function grammar() {
     return $.apply($.seq($.apply($.eps, function() {
         return "grammar";

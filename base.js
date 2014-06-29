@@ -3,7 +3,12 @@ var b = {};
 // exact string match
 b.lit = function (str) {
 	return function (from) {
-		return this.source.substr(from, str.length) !== str ? null : {val: str, next: from + str.length};
+		if (this.source.substr(from, str.length) === str)
+			return {val: str, next: from + str.length};
+		if (this.last < from)
+			this.fails = [], this.last = from;
+		this.fails.push(str);
+		return null;
 	};
 };
 
@@ -189,8 +194,9 @@ b.between = function (arg, n, m) {
 
 // parse given string with given parser
 b.parse = function (parser, source) {
-	var state = {source: source};
-	return parser.bind(state)(0);
+	var state = {source: source, last: 0, fails: []};
+	var ret = parser.bind(state)(0);
+	return !ret || ret.next != source.length ? {fails: state.fails} : ret;
 };
 
 module.exports = b;
