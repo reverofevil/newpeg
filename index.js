@@ -8,6 +8,5 @@ module.exports = function (code, opt) {
 	opt.parser = opt.parser || parser;
 	opt.base_path = opt.base_path || path.join(__dirname, '/base.js');
 	var ast = base.parse(opt.parser(), code);
-	if (ast.fails) throw ast;
 	return gen.generate(ast.val, opt.base_path);
 };

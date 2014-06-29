@@ -5,9 +5,7 @@ b.lit = function (str) {
 	return function (from) {
 		if (this.source.substr(from, str.length) === str)
 			return {val: str, next: from + str.length};
-		if (this.last < from)
-			this.fails = [], this.last = from;
-		this.fails.push(str);
+		this.fail(from, JSON.stringify(str));
 		return null;
 	};
 };
@@ -16,7 +14,10 @@ b.lit = function (str) {
 b.liti = function (str) {
 	str = str.toLowerCase();
 	return function (from) {
-		return this.source.substr(from, str.length).toLowerCase() !== str ? null : {val: str, next: from + str.length};
+		if (this.source.substr(from, str.length).toLowerCase() === str)
+			return {val: str, next: from + str.length};
+		this.fail(from, JSON.stringify(str) + "i");
+		return null;
 	};
 };
 
@@ -63,7 +64,10 @@ b.eps = function (from) {
 
 // one arbitrary character
 b.chr = function (from) {
-	return from < this.source.length ? {val: this.source[from], next: from + 1} : null;
+	if (from < this.source.length)
+		return {val: this.source[from], next: from + 1};
+	this.fail(from, "any char");
+	return null;
 };
 
 // a+
@@ -129,9 +133,12 @@ b.str = function (p) {
 };
 
 // check if character satisfies criteria
-b.satisfy = function (f) {
+b.satisfy = function (f, message) {
 	return function (from) {
-		return from < this.source.length && f(this.source[from]) ? {val: this.source[from], next: from + 1} : null;
+		if (from < this.source.length && f(this.source[from]))
+			return {val: this.source[from], next: from + 1};
+		this.fail(from, message);
+		return null;
 	};
 };
 
@@ -143,12 +150,15 @@ function asc(c) {
 b.range = function (a, d) {
 	return b.satisfy(function (c) {
 		return asc(a) <= asc(c) && asc(c) <= asc(d);
-	});
+	}, "[" + JSON.stringify(a) + "-" + JSON.stringify(d) + "]");
 };
 
 // end of input
 b.eof = function (from) {
-	return from < this.source.length ? null : {val: null, next: from};
+	if (from >= this.source.length)
+		return {val: null, next: from};
+	this.fail(from, "end of input");
+	return null;
 };
 
 // {n}
@@ -192,11 +202,24 @@ b.between = function (arg, n, m) {
 	};
 };
 
+var state_t = function (source) {
+	this.source = source;
+	this.last = 0;
+	this.fails = [];
+};
+state_t.prototype.fail = function (from, str) {
+	if (this.last < from)
+		this.fails = [], this.last = from;
+	this.fails.push(str);
+};
+
 // parse given string with given parser
 b.parse = function (parser, source) {
-	var state = {source: source, last: 0, fails: []};
+	var state = new state_t(source);
 	var ret = parser.bind(state)(0);
-	return !ret || ret.next != source.length ? {fails: state.fails} : ret;
+	if (!ret || ret.next != source.length)
+		throw "Expected " + state.fails.join(", ") + " but got " + JSON.stringify(source[state.last]);
+	return ret;
 };
 
 module.exports = b;
