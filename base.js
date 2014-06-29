@@ -146,11 +146,16 @@ function asc(c) {
 	return c.charCodeAt(0);
 }
 
+function escape(c) {
+	var str = JSON.stringify(c);
+	return str.substr(1, str.length - 2);
+}
+
 // check for character range
 b.range = function (a, d) {
 	return b.satisfy(function (c) {
 		return asc(a) <= asc(c) && asc(c) <= asc(d);
-	}, "[" + JSON.stringify(a) + "-" + JSON.stringify(d) + "]");
+	}, "[" + escape(a) + "-" + escape(d) + "]");
 };
 
 // end of input
