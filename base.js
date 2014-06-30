@@ -214,16 +214,19 @@ var state_t = function (source) {
 };
 state_t.prototype.fail = function (from, str) {
 	if (this.last < from)
-		this.fails = [], this.last = from;
-	this.fails.push(str);
+		this.fails = {}, this.last = from;
+	this.fails[str] = true;
 };
 
 // parse given string with given parser
 b.parse = function (parser, source) {
 	var state = new state_t(source);
 	var ret = parser.bind(state)(0);
-	if (!ret || ret.next != source.length)
-		throw "Expected " + state.fails.join(", ") + " but got " + JSON.stringify(source[state.last]);
+	if (!ret || ret.next != source.length) {
+		var fails = [];
+		for (var fail in state.fails) if (state.fails.hasOwnProperty(fail)) fails.push(fail);
+		throw "Expected " + fails.join(", ") + " but got " + JSON.stringify(source[state.last]);
+	}
 	return ret;
 };
 
